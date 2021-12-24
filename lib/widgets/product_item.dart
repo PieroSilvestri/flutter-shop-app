@@ -15,9 +15,6 @@ class ProductItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final product = Provider.of<Product>(context, listen: false);
     final cart = Provider.of<Cart>(context);
-    print('product');
-    print(product.title);
-    print(product.imageUrl.toString());
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(10),
