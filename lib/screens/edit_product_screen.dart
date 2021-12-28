@@ -94,35 +94,33 @@ class _EditProductState extends State<EditProduct> {
         await Provider.of<Products>(context, listen: false)
             .addProduct(_editedProduct);
       } catch (err) {
-        await showDialog(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Text('An error occurred'),
-            content: const Text('Something went wrong.'),
-            actions: [
-              TextButton(
-                  onPressed: () {
-                    Navigator.of(ctx).pop();
-                  },
-                  child: const Text('Okay'))
-            ],
-          ),
-        );
-      } finally {
-          setState(() {
-            _isLoading = true;
-          });
-          Navigator.of(context).pop();
+        await _showErrorDialog(err);
       }
-      
     } else {
-      Provider.of<Products>(context, listen: false)
+      await Provider.of<Products>(context, listen: false)
           .updateProduct(_editedProduct.id, _editedProduct);
-      setState(() {
-        _isLoading = false;
-      });
-      Navigator.of(context).pop();
     }
+    setState(() {
+      _isLoading = false;
+    });
+    Navigator.of(context).pop();
+  }
+
+  Future<void> _showErrorDialog(Object err) {
+    return showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('An error occurred'),
+        content: const Text('Something went wrong.'),
+        actions: [
+          TextButton(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+              },
+              child: const Text('Okay'))
+        ],
+      ),
+    );
   }
 
   @override

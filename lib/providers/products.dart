@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shop_app/models/http_exception.dart';
 import 'package:shop_app/providers/product.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -42,13 +43,12 @@ class Products with ChangeNotifier {
       final List<Product> loadedProducts = [];
       extractedData.forEach((prodId, prodData) {
         loadedProducts.add(Product(
-          id: prodId,
-          title: prodData['title'],
-          description: prodData['description'],
-          price: prodData['price'],
-          imageUrl: prodData['imageUrl'],
-          isFavorite: prodData['isFavorite']
-        ));
+            id: prodId,
+            title: prodData['title'],
+            description: prodData['description'],
+            price: prodData['price'],
+            imageUrl: prodData['imageUrl'],
+            isFavorite: prodData['isFavorite']));
       });
       _items = loadedProducts;
       notifyListeners();
@@ -83,7 +83,6 @@ class Products with ChangeNotifier {
       // _items.insert(0, newProduct);
       notifyListeners();
     } catch (err) {
-      
       throw err;
     }
   }
@@ -92,18 +91,43 @@ class Products with ChangeNotifier {
     return _items.firstWhere((element) => element.id == id);
   }
 
-  void updateProduct(String id, Product product) {
+  Future<void> updateProduct(String id, Product product) async {
     final prodIndex = _items.indexWhere((prod) => prod.id == id);
     if (prodIndex >= 0) {
+      final url = Uri.parse(
+          'https://flutter-test-f2ad4-default-rtdb.europe-west1.firebasedatabase.app/products/$id.json');
+
+      var jsonProduct = json.encode({
+        'title': product.title,
+        'description': product.description,
+        'imageUrl': product.imageUrl,
+        'price': product.price,
+        'isFavorite': product.isFavorite
+      });
+
+      await http.patch(url, body: jsonProduct);
+
       _items[prodIndex] = product;
       notifyListeners();
-    } else {
-      
-    }
+    } else {}
   }
 
-  void deleteProduct(String id) {
-    _items.removeWhere((element) => element.id == id);
+  Future<void> deleteProduct(String id) async {
+    final url = Uri.parse(
+        'https://flutter-test-f2ad4-default-rtdb.europe-west1.firebasedatabase.app/products/$id.json');
+    final existingProductIndex =
+        _items.indexWhere((element) => element.id == id);
+    var existingProduct = _items[existingProductIndex];
+    _items.removeAt(existingProductIndex);
     notifyListeners();
+    final response = await http.delete(url);
+
+    if (response.statusCode >= 400) {
+      _items.insert(existingProductIndex, existingProduct);
+      notifyListeners();
+      throw HttpException('Could not delete product.');
+    }
+
+    // _items.removeWhere((element) => element.id == id);
   }
 }
