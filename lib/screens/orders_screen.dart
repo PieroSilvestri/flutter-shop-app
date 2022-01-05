@@ -16,50 +16,75 @@ class OrdersScreen extends StatefulWidget {
 class _OrdersScreenState extends State<OrdersScreen> {
   var _isLoading = false;
 
+  late Future _ordersFuture;
+
+    Future _obtainOrdersFuture() {
+      return Provider.of<Orders>(context, listen: false).fetchAndSetOrders();
+    }
+
   @override
   void initState() {
-    // TODO: implement initState
-    Future.delayed(Duration.zero).then((value) async {
-      setState(() {
-        _isLoading = true;
-      });
-      await Provider.of<Orders>(context, listen: false).fetchAndSetOrders();
+    /*
+    _isLoading = true;
+    Provider.of<Orders>(context, listen: false)
+        .fetchAndSetOrders()
+        .then((value) {
       setState(() {
         _isLoading = false;
       });
     });
+    */
+    _ordersFuture = _obtainOrdersFuture();
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
-    final ordersData = Provider.of<Orders>(context);
+    // final ordersData = Provider.of<Orders>(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Your Orders'),
+        title: const Text('Your Orders'),
       ),
-      drawer: AppDrawer(),
-      body: _isLoading ? CircularProgressIndicator() : OrdersBuilder(ordersData: ordersData,)
+      drawer: const AppDrawer(),
+      body: FutureBuilder(
+        future: _ordersFuture,
+        builder: (ctx, dataSnapshot) {
+          if (dataSnapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          } else if (dataSnapshot.error != null) {
+            return const Center(child: Text('An error occurred!'),);
+          }
+          return Consumer<Orders>(
+            builder: (ctx, ordersData, child) => ListView.builder(
+                itemCount: ordersData.orders.length,
+                itemBuilder: (ctx, i) => OrderItem(ordersData.orders[i])),
+          );
+        },
+      ),
     );
   }
 }
 
 class OrdersBuilder extends StatelessWidget {
-
   final Orders ordersData;
 
   const OrdersBuilder({
-    Key? key, required this.ordersData,
+    Key? key,
+    required this.ordersData,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return (ordersData.orders.isEmpty
-          ? const Center(child: Text('There are no orders'),)
-          : ListView.builder(
-              itemCount: ordersData.orders.length,
-              itemBuilder: (ctx, i) => OrderItem(ordersData.orders[i]),
-            ));
+        ? const Center(
+            child: Text('There are no orders'),
+          )
+        : ListView.builder(
+            itemCount: ordersData.orders.length,
+            itemBuilder: (ctx, i) => OrderItem(ordersData.orders[i]),
+          ));
   }
 }
